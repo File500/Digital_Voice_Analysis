@@ -365,8 +365,8 @@ def analyze_folder_features(input_folder, output_folder):
 
 if __name__ == "__main__":
     # Define input and output folders
-    input_folder = "path/to/your/audio/clips"  # Replace with your input folder
-    output_folder = "path/to/output/spectrograms"  # Replace with your output folder
+    input_folder = "../Data"  # Replace with your input folder
+    output_folder = "./spectrograms"  # Replace with your output folder
 
     # Create output folder if it doesn't exist
     os.makedirs(output_folder, exist_ok=True)
