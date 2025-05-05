@@ -11,7 +11,7 @@ from tqdm import tqdm
 class SpectrogramGenerator:
     def __init__(self, input_folder, output_folder,
                  n_fft=2048, hop_length=512, n_mels=128,
-                 fmin=20, fmax=8000, sample_rate=None):
+                 fmin=20, fmax=8000, sample_rate=None, file_type = ".wav"):
         """
         Initialize the SpectrogramGenerator class.
 
@@ -42,6 +42,7 @@ class SpectrogramGenerator:
         self.fmin = fmin
         self.fmax = fmax
         self.sample_rate = sample_rate
+        self.file_type = file_type
 
         self.spectrogram_dir = os.path.join(output_folder, 'spectrograms')
         self.melspectrogram_dir = os.path.join(output_folder, 'mel_spectrograms')
@@ -54,7 +55,7 @@ class SpectrogramGenerator:
             os.makedirs(directory, exist_ok=True)
 
         self.audio_files = [f for f in os.listdir(input_folder)
-                            if f.lower().endswith('.wav')]
+                            if f.lower().endswith(self.file_type)]
         print(f"Found {len(self.audio_files)} WAV files.")
 
     def _load_audio(self, filename):
@@ -289,7 +290,7 @@ def analyze_folder_features(input_folder, output_folder):
     if file_names:
         plt.figure(figsize=(12, 6))
         plt.bar(range(len(spectral_centroids)), spectral_centroids)
-        plt.xticks(range(len(file_names)), file_names, rotation=90)
+        plt.xticks(range(len(file_names)), file_names, rotation=90, fontsize=0.5)
         plt.xlabel('Audio Files')
         plt.ylabel('Spectral Centroid (Hz)')
         plt.title('Average Spectral Centroid (Audio Brightness) Comparison')
@@ -299,7 +300,7 @@ def analyze_folder_features(input_folder, output_folder):
 
         plt.figure(figsize=(12, 6))
         plt.bar(range(len(tempos)), tempos)
-        plt.xticks(range(len(file_names)), file_names, rotation=90)
+        plt.xticks(range(len(file_names)), file_names, rotation=90, fontsize=0.5)
         plt.xlabel('Audio Files')
         plt.ylabel('Tempo (BPM)')
         plt.title('Estimated Tempo Comparison')
@@ -310,11 +311,13 @@ def analyze_folder_features(input_folder, output_folder):
         plt.figure(figsize=(10, 8))
         plt.scatter(spectral_centroids, tempos)
 
-        for i, file_name in enumerate(file_names):
-            plt.annotate(file_name,
-                         (spectral_centroids[i], tempos[i]),
-                         fontsize=8,
-                         alpha=0.7)
+        # for anotation
+        
+        # for i, file_name in enumerate(file_names):
+        #     plt.annotate(file_name,
+        #                  (spectral_centroids[i], tempos[i]),
+        #                  fontsize=8,
+        #                  alpha=0.7)
 
         plt.xlabel('Spectral Centroid (Hz)')
         plt.ylabel('Tempo (BPM)')
@@ -339,13 +342,14 @@ if __name__ == "__main__":
         n_mels=128,
         fmin=20,
         fmax=8000,
-        sample_rate=None # was 22050
+        sample_rate=None, # was 22050
+        file_type=".wav"
     )
 
     generator.process_all_files(num_workers=4)
 
     sample_files = generator.audio_files[:]
-    for filename in sample_files:
+    for filename in tqdm(sample_files):
         create_advanced_visualization(input_folder, output_folder, filename)
 
     analyze_folder_features(input_folder, output_folder)

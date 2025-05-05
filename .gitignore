@@ -175,3 +175,4 @@ cython_debug/
 
 # image directory
 spectrograms/*
+spectrograms_mp3/*
