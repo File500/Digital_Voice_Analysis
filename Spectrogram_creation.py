@@ -6,12 +6,13 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from concurrent.futures import ProcessPoolExecutor
 from tqdm import tqdm
+import argparse
 
 
 class SpectrogramGenerator:
     def __init__(self, input_folder, output_folder,
-                 n_fft=2048, hop_length=512, n_mels=128,
-                 fmin=20, fmax=8000, sample_rate=None, file_type = ".wav"):
+                 n_fft, hop_length, n_mels,
+                 fmin, fmax, sample_rate, file_type):
         """
         Initialize the SpectrogramGenerator class.
 
@@ -50,13 +51,11 @@ class SpectrogramGenerator:
         self.harmonic_dir = os.path.join(output_folder, 'harmonic')
         self.percussive_dir = os.path.join(output_folder, 'percussive')
 
-        for directory in [self.spectrogram_dir, self.melspectrogram_dir,
-                          self.chroma_dir, self.harmonic_dir, self.percussive_dir]:
+        for directory in [self.spectrogram_dir, self.melspectrogram_dir,self.chroma_dir, self.harmonic_dir, self.percussive_dir]:
             os.makedirs(directory, exist_ok=True)
 
-        self.audio_files = [f for f in os.listdir(input_folder)
-                            if f.lower().endswith(self.file_type)]
-        print(f"Found {len(self.audio_files)} WAV files.")
+        self.audio_files = [f for f in os.listdir(input_folder) if f.lower().endswith(self.file_type)]
+        print(f"Found {len(self.audio_files)} audio files.")
 
     def _load_audio(self, filename):
         """Load an audio file and return the signal."""
@@ -78,8 +77,8 @@ class SpectrogramGenerator:
         D_db = librosa.amplitude_to_db(np.abs(D), ref=np.max)
 
         fig, ax = plt.subplots(figsize=(10, 5))
-        img = librosa.display.specshow(D_db, x_axis='time', y_axis='log',
-                                       sr=sr, hop_length=self.hop_length, ax=ax)
+        img = librosa.display.specshow(D_db, x_axis='time', y_axis='log', sr=sr, hop_length=self.hop_length, ax=ax)
+        
         ax.set_title(f'Spectrogram - {os.path.basename(filename)}')
         fig.colorbar(img, ax=ax, format='%+2.0f dB')
 
@@ -93,15 +92,12 @@ class SpectrogramGenerator:
         """Generate and save a mel spectrogram."""
         y, sr = self._load_audio(filename)
 
-        S = librosa.feature.melspectrogram(y=y, sr=sr, n_fft=self.n_fft,
-                                           hop_length=self.hop_length, n_mels=self.n_mels,
-                                           fmin=self.fmin, fmax=self.fmax)
+        S = librosa.feature.melspectrogram(y=y, sr=sr, n_fft=self.n_fft, hop_length=self.hop_length, n_mels=self.n_mels, fmin=self.fmin, fmax=self.fmax)
         S_db = librosa.power_to_db(S, ref=np.max)
 
         fig, ax = plt.subplots(figsize=(10, 5))
-        img = librosa.display.specshow(S_db, x_axis='time', y_axis='mel',
-                                       sr=sr, hop_length=self.hop_length,
-                                       fmin=self.fmin, fmax=self.fmax, ax=ax)
+        img = librosa.display.specshow(S_db, x_axis='time', y_axis='mel', sr=sr, hop_length=self.hop_length, fmin=self.fmin, fmax=self.fmax, ax=ax)
+        
         ax.set_title(f'Mel Spectrogram - {os.path.basename(filename)}')
         fig.colorbar(img, ax=ax, format='%+2.0f dB')
 
@@ -115,12 +111,11 @@ class SpectrogramGenerator:
         """Generate and save a chromagram (melodic spectrogram)."""
         y, sr = self._load_audio(filename)
 
-        chroma = librosa.feature.chroma_stft(y=y, sr=sr, n_fft=self.n_fft,
-                                             hop_length=self.hop_length)
+        chroma = librosa.feature.chroma_stft(y=y, sr=sr, n_fft=self.n_fft, hop_length=self.hop_length)
 
         fig, ax = plt.subplots(figsize=(10, 4))
-        img = librosa.display.specshow(chroma, x_axis='time', y_axis='chroma',
-                                       sr=sr, hop_length=self.hop_length, ax=ax)
+        img = librosa.display.specshow(chroma, x_axis='time', y_axis='chroma', sr=sr, hop_length=self.hop_length, ax=ax)
+        
         ax.set_title(f'Chromagram - {os.path.basename(filename)}')
         fig.colorbar(img, ax=ax)
 
@@ -143,8 +138,8 @@ class SpectrogramGenerator:
         D_percussive_db = librosa.amplitude_to_db(np.abs(D_percussive), ref=np.max)
 
         fig_harm, ax_harm = plt.subplots(figsize=(10, 5))
-        img_harm = librosa.display.specshow(D_harmonic_db, x_axis='time', y_axis='log',
-                                            sr=sr, hop_length=self.hop_length, ax=ax_harm)
+        img_harm = librosa.display.specshow(D_harmonic_db, x_axis='time', y_axis='log', sr=sr, hop_length=self.hop_length, ax=ax_harm)
+        
         ax_harm.set_title(f'Harmonic Spectrogram - {os.path.basename(filename)}')
         fig_harm.colorbar(img_harm, ax=ax_harm, format='%+2.0f dB')
 
@@ -153,8 +148,8 @@ class SpectrogramGenerator:
         self._save_figure(fig_harm, output_path_harm)
 
         fig_perc, ax_perc = plt.subplots(figsize=(10, 5))
-        img_perc = librosa.display.specshow(D_percussive_db, x_axis='time', y_axis='log',
-                                            sr=sr, hop_length=self.hop_length, ax=ax_perc)
+        img_perc = librosa.display.specshow(D_percussive_db, x_axis='time', y_axis='log', sr=sr, hop_length=self.hop_length, ax=ax_perc)
+        
         ax_perc.set_title(f'Percussive Spectrogram - {os.path.basename(filename)}')
         fig_perc.colorbar(img_perc, ax=ax_perc, format='%+2.0f dB')
 
@@ -182,8 +177,7 @@ class SpectrogramGenerator:
         failed = 0
 
         with ProcessPoolExecutor(max_workers=num_workers) as executor:
-            results = list(tqdm(executor.map(self.process_file, self.audio_files),
-                                total=len(self.audio_files)))
+            results = list(tqdm(executor.map(self.process_file, self.audio_files), total=len(self.audio_files)))
 
         successful = sum(results)
         failed = len(results) - successful
@@ -192,19 +186,8 @@ class SpectrogramGenerator:
         print(f"Successful: {successful}, Failed: {failed}")
 
 
-def create_advanced_visualization(input_folder, output_folder, filename):
-    """
-    Create a more advanced visualization for a single audio file with multiple spectrograms.
+def create_advanced_visualization(input_folder, output_folder, filename, hop_length, n_fft, n_mels):
 
-    Parameters:
-    -----------
-    input_folder : str
-        Path to folder containing audio files.
-    output_folder : str
-        Path to folder where visualizations will be saved.
-    filename : str
-        Name of the audio file to process.
-    """
     y, sr = librosa.load(os.path.join(input_folder, filename))
 
     advanced_viz_dir = os.path.join(output_folder, 'advanced_visualizations')
@@ -216,23 +199,21 @@ def create_advanced_visualization(input_folder, output_folder, filename):
     axs[0].set_title('Waveform')
     axs[0].set_ylabel('Amplitude')
 
-    D = librosa.stft(y, n_fft=2048, hop_length=512)
+    D = librosa.stft(y, n_fft=n_fft, hop_length=hop_length)
     D_db = librosa.amplitude_to_db(np.abs(D), ref=np.max)
-    img1 = librosa.display.specshow(D_db, x_axis='time', y_axis='log', sr=sr,
-                                    hop_length=512, ax=axs[1])
+    img1 = librosa.display.specshow(D_db, x_axis='time', y_axis='log', sr=sr, hop_length=hop_length, ax=axs[1])
+    
     axs[1].set_title('Spectrogram')
     fig.colorbar(img1, ax=axs[1], format='%+2.0f dB')
 
-    S = librosa.feature.melspectrogram(y=y, sr=sr, n_fft=2048, hop_length=512, n_mels=128)
+    S = librosa.feature.melspectrogram(y=y, sr=sr, n_fft=n_fft, hop_length=hop_length, n_mels=n_mels)
     S_db = librosa.power_to_db(S, ref=np.max)
-    img2 = librosa.display.specshow(S_db, x_axis='time', y_axis='mel', sr=sr,
-                                    hop_length=512, ax=axs[2])
+    img2 = librosa.display.specshow(S_db, x_axis='time', y_axis='mel', sr=sr,hop_length=hop_length, ax=axs[2])
     axs[2].set_title('Mel Spectrogram')
     fig.colorbar(img2, ax=axs[2], format='%+2.0f dB')
 
-    chroma = librosa.feature.chroma_stft(y=y, sr=sr, n_fft=2048, hop_length=512)
-    img3 = librosa.display.specshow(chroma, x_axis='time', y_axis='chroma', sr=sr,
-                                    hop_length=512, ax=axs[3])
+    chroma = librosa.feature.chroma_stft(y=y, sr=sr, n_fft=n_fft, hop_length=hop_length)
+    img3 = librosa.display.specshow(chroma, x_axis='time', y_axis='chroma', sr=sr,hop_length=hop_length, ax=axs[3])
     axs[3].set_title('Chromagram (Melodic Spectrogram)')
     fig.colorbar(img3, ax=axs[3])
 
@@ -245,21 +226,12 @@ def create_advanced_visualization(input_folder, output_folder, filename):
     plt.close(fig)
 
 
-def analyze_folder_features(input_folder, output_folder):
-    """
-    Analyze audio features across all files and generate summary visualizations.
+def analyze_folder_features(input_folder, output_folder, audio_type):
 
-    Parameters:
-    -----------
-    input_folder : str
-        Path to folder containing audio files.
-    output_folder : str
-        Path to folder where summary visualizations will be saved.
-    """
     summary_dir = os.path.join(output_folder, 'summary')
     os.makedirs(summary_dir, exist_ok=True)
 
-    audio_files = [f for f in os.listdir(input_folder) if f.lower().endswith('.wav')]
+    audio_files = [f for f in os.listdir(input_folder) if f.lower().endswith(audio_type)]
 
     spectral_centroids = []
     spectral_rolloffs = []
@@ -329,29 +301,54 @@ def analyze_folder_features(input_folder, output_folder):
 
 if __name__ == "__main__":
     
-    input_folder = "../Data"
-    output_folder = "./spectrograms"
+    parser = argparse.ArgumentParser(description='Audio file processing script')
+    
+    parser.add_argument('--input_folder', type=str, required=True, help='Directory containing audio files')
+    
+    parser.add_argument('--output_folder', type=str, default='spectograms', help='Directory to save generated plots')
+    
+    parser.add_argument('--audio_type', type=str, choices=['.wav', '.mp3', '.ogg', '.flac'], required=True, help='File type extension')
+                       
+    parser.add_argument('--n_fft', type=int, default=2048, help='Fast fourier transformation window')
+    
+    parser.add_argument('--hop_length', type=int, default=512, help='Number of samples between successive frames')
+    
+    parser.add_argument('--n_mels', type=int, default=128, help='Number of mel bands to generate')
+    
+    parser.add_argument('--fmin', type=int, default=20, help='Minimum frequency in Hz')
+  
+    parser.add_argument('--fmax', type=int, default=8000, help='Maximum frequency in Hz')
+    
+    parser.add_argument('--sample_rate', type=int, default=None, help='Target sample rate. If not specified, uses the native sample rate of each file')
 
-    os.makedirs(output_folder, exist_ok=True)
-
+    args = parser.parse_args()
+    
+    os.makedirs(args.output_folder, exist_ok=True)
+    
     generator = SpectrogramGenerator(
-        input_folder=input_folder,
-        output_folder=output_folder,
-        n_fft=2048,
-        hop_length=512,
-        n_mels=128,
-        fmin=20,
-        fmax=8000,
-        sample_rate=None, # was 22050
-        file_type=".wav"
+        input_folder=args.input_folder,
+        output_folder=args.output_folder,
+        n_fft=args.n_fft,
+        hop_length=args.hop_length,
+        n_mels=args.n_mels,
+        fmin=args.fmin,
+        fmax=args.fmax,
+        sample_rate=args.sample_rate, # was 22050
+        file_type=args.audio_type
     )
 
     generator.process_all_files(num_workers=4)
 
     sample_files = generator.audio_files[:]
+    
     for filename in tqdm(sample_files):
-        create_advanced_visualization(input_folder, output_folder, filename)
+        create_advanced_visualization(args.input_folder, 
+                                      args.output_folder, 
+                                      filename, 
+                                      args.hop_length,
+                                      args.n_fft,
+                                      args.n_mels)
 
-    analyze_folder_features(input_folder, output_folder)
+    analyze_folder_features(args.input_folder, args.output_folder, args.audio_type)
 
     print("All processing completed!")
